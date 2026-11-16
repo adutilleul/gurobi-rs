@@ -1,0 +1,7 @@
+{
+  "name": "NLCRHS",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintnonlinear.html#nlcrhs",
+  "dtype": "dbl",
+  "otype": "nlconstr",
+  "modifiable": true
+}

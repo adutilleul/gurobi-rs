@@ -35,5 +35,8 @@ pub use crate::{
 #[cfg(feature = "gurobi13")]
 pub use crate::GRB_METHOD_PDHG;
 
+#[cfg(feature = "gurobi14")]
+pub use crate::{GRB_METHOD_NLBARRIER, NLConstr, NLExprTree};
+
 pub use ModelSense::*;
 pub use VarType::*;

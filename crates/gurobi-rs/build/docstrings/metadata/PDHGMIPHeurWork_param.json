@@ -1,0 +1,8 @@
+{
+  "name": "PDHGMIPHeurWork",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/parameters.html#pdhgmipheurwork",
+  "dtype": "dbl",
+  "default": "0",
+  "min": "0",
+  "max": "Infinity"
+}

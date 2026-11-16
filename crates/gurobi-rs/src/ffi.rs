@@ -1,5 +1,5 @@
 cfg_if::cfg_if! {
-    if #[cfg(any(feature = "gurobi13", feature = "gurobi12"))] {
+    if #[cfg(any(feature = "gurobi14", feature = "gurobi13", feature = "gurobi12"))] {
         pub use guro_sys::*;
 
         pub mod shims {

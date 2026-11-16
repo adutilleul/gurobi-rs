@@ -1,0 +1,7 @@
+{
+  "name": "NLCSlack",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintnonlinear.html#nlcslack",
+  "dtype": "dbl",
+  "otype": "nlconstr",
+  "modifiable": false
+}

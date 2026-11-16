@@ -1,0 +1,7 @@
+{
+  "name": "IsConvex",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/model.html#isconvex",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

@@ -20,7 +20,8 @@ mod private_traits {
 
 use private_traits::ModelObjectPrivate;
 
-/// This trait encompasses all Gurobi model objects: [`Var`], [`Constr`], [`GenConstr`], [`QConstr`] and [`SOS`].
+/// This trait encompasses all Gurobi model objects: [`Var`], [`Constr`], [`GenConstr`], [`QConstr`], [`SOS`],
+/// and (with the `gurobi14` feature) [`NLConstr`].
 /// Each `ModelObject` is associated with a particular model, and can only be used with that model.
 /// Each `ModelObject` also has a unique, fixed 32-bit ID.  Gurobi itself uses an `i32` to index objects
 /// (only positive indices are used), so the 32-bit limitation is already there.  Note that IDs are only
@@ -94,6 +95,12 @@ create_model_obj_ty!(QConstr, qconstrs, ffi::GRBdelqconstrs,
 );
 create_model_obj_ty!(SOS, sos, ffi::GRBdelsos,
 "An SOS constraint added to a [`Model`]
+
+ To interact with the attributes of a constraint, use [`Model::get_obj_attr`] and [`Model::set_obj_attr`]"
+);
+#[cfg(feature = "gurobi14")]
+create_model_obj_ty!(NLConstr, nlconstrs, ffi::GRBdelnlconstrs,
+"A nonlinear constraint added to a [`Model`] (Gurobi 14+)
 
  To interact with the attributes of a constraint, use [`Model::get_obj_attr`] and [`Model::set_obj_attr`]"
 );

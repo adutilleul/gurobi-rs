@@ -107,6 +107,8 @@ enum ObjType {
     GenConstr,
     QConstr,
     SOS,
+    #[serde(rename = "nlconstr")]
+    NLConstr,
 }
 
 impl FromStr for ObjType {
@@ -119,9 +121,11 @@ impl FromStr for ObjType {
             "gconstr" => ObjType::GenConstr,
             "qconstr" => ObjType::QConstr,
             "sos" => ObjType::SOS,
+            "nlconstr" => ObjType::NLConstr,
             _ => {
                 return Err(ParseError::Otype(
-                    "expected `model`, `var`, `constr`, `gconstr`, `qconstr` or `sos`".to_string(),
+                    "expected `model`, `var`, `constr`, `gconstr`, `qconstr`, `sos` or `nlconstr`"
+                        .to_string(),
                 ));
             }
         };
@@ -214,6 +218,7 @@ pub fn docstring_filepath(name: &str) -> String {
 enum Availability {
     All,
     Gurobi13,
+    Gurobi14,
 }
 
 impl Availability {
@@ -221,6 +226,7 @@ impl Availability {
         match value.unwrap_or_default() {
             "" => Ok(Self::All),
             "gurobi13" => Ok(Self::Gurobi13),
+            "gurobi14" => Ok(Self::Gurobi14),
             value => anyhow::bail!("unsupported feature requirement {value:?}"),
         }
     }
@@ -229,6 +235,25 @@ impl Availability {
         match self {
             Self::All => TokenStream::new(),
             Self::Gurobi13 => quote!(#[cfg(feature = "gurobi13")]),
+            Self::Gurobi14 => quote!(#[cfg(feature = "gurobi14")]),
+        }
+    }
+
+    /// Minimum Cargo feature required by every member of an enum.
+    fn enum_cfg(members: &[EnumMember]) -> TokenStream {
+        if members
+            .iter()
+            .all(|m| matches!(m.availability, Availability::Gurobi14))
+        {
+            quote!(#[cfg(feature = "gurobi14")])
+        } else if members
+            .iter()
+            .all(|m| !matches!(m.availability, Availability::All))
+        {
+            // `gurobi14` implies `gurobi13`, so this covers mixed 13/14 enums too.
+            quote!(#[cfg(feature = "gurobi13")])
+        } else {
+            TokenStream::new()
         }
     }
 }
@@ -301,9 +326,11 @@ mod param {
     }
 
     fn gen_type(ts: &mut TokenStream, ident: &Ident, members: &[EnumMember]) -> anyhow::Result<()> {
+        let cfg = Availability::enum_cfg(members);
         let members = members.iter().map(gen_variant);
 
         let decl = quote! {
+          #cfg
           #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, FromCStr, AsCStr)]
           pub enum #ident {
             #(
@@ -327,19 +354,34 @@ mod param {
             gen_type(&mut ts, ident, members)?;
         }
 
-        let exports: Vec<_> = enums.keys().collect();
+        let exports: Vec<_> = enums
+            .iter()
+            .map(|(ident, (_, members))| {
+                let cfg = Availability::enum_cfg(members);
+                quote! {
+                  #cfg
+                  pub use super::#ident;
+                }
+            })
+            .collect();
+        let variant_exports: Vec<_> = enums
+            .iter()
+            .map(|(ident, (_, members))| {
+                let cfg = Availability::enum_cfg(members);
+                quote! {
+                  #cfg
+                  #[doc(inline)]
+                  pub use super::#ident::*;
+                }
+            })
+            .collect();
         ts.extend(quote! {
           pub(super) mod enum_exports {
-            #(
-              pub use super::#exports;
-            )*
+            #(#exports)*
           }
 
           pub mod variant_exports {
-            #(
-              #[doc(inline)]
-              pub use super::#exports::*;
-            )*
+            #(#variant_exports)*
           }
         });
 
@@ -429,16 +471,18 @@ mod attrs {
         }
     }
 
-    fn add_dtype_marker_impl(ts: &mut TokenStream, target: &Ident, d: DataType) {
+    fn add_dtype_marker_impl(ts: &mut TokenStream, target: &Ident, d: DataType, cfg: TokenStream) {
         let ident = format_ident!("{}Attr", d.ident_fragment().unwrap());
         ts.extend(quote! {
+          #cfg
           impl #ident for #target {}
         });
     }
 
-    fn add_otype_marker_impl(ts: &mut TokenStream, target: &Ident, o: ObjType) {
+    fn add_otype_marker_impl(ts: &mut TokenStream, target: &Ident, o: ObjType, cfg: TokenStream) {
         let ident = o.obj_ident();
         ts.extend(quote! {
+          #cfg
           impl ObjAttr for #target {
             type Obj = #ident;
           }
@@ -452,8 +496,10 @@ mod attrs {
         o: ObjType,
         members: &[EnumMember],
     ) -> anyhow::Result<()> {
+        let cfg = Availability::enum_cfg(members);
         let variants = members.iter().map(gen_variant);
         ts.extend(quote! {
+          #cfg
           #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, FromCStr, AsCStr)]
           pub enum #ident {
             #(
@@ -463,13 +509,13 @@ mod attrs {
         });
 
         if !matches!(d, DataType::Custom) {
-            add_dtype_marker_impl(ts, ident, d);
+            add_dtype_marker_impl(ts, ident, d, cfg.clone());
         } else {
             assert_eq!(members.len(), 1);
         }
 
         if o.needs_objattr_impl() {
-            add_otype_marker_impl(ts, ident, o);
+            add_otype_marker_impl(ts, ident, o, cfg);
         }
 
         Ok(())
@@ -482,24 +528,42 @@ mod attrs {
         let mut ts = quote! {
           use cstr_enum::*;
           use super::{IntAttr, CharAttr, StrAttr, DoubleAttr, ObjAttr, Var, Constr, GenConstr, QConstr, SOS};
+          #[cfg(feature = "gurobi14")]
+          use super::NLConstr;
         };
 
         for (ident, (o, d, members)) in enums {
             gen_type(&mut ts, ident, *d, *o, members)?;
         }
 
-        let exports: Vec<_> = enums.keys().collect();
+        let exports: Vec<_> = enums
+            .iter()
+            .map(|(ident, (_, _, members))| {
+                let cfg = Availability::enum_cfg(members);
+                quote! {
+                  #cfg
+                  pub use super::#ident;
+                }
+            })
+            .collect();
+        let variant_exports: Vec<_> = enums
+            .iter()
+            .map(|(ident, (_, _, members))| {
+                let cfg = Availability::enum_cfg(members);
+                quote! {
+                  #cfg
+                  #[doc(inline)]
+                  pub use super::#ident::*;
+                }
+            })
+            .collect();
         ts.extend(quote! {
           pub(super) mod enum_exports {
-            #(
-              pub use super::{#exports};
-            )*
+            #(#exports)*
           }
 
           pub mod variant_exports {
-            #(
-              pub use super::#exports::*;
-            )*
+            #(#variant_exports)*
           }
         });
 

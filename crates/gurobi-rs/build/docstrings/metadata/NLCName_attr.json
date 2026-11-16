@@ -1,0 +1,7 @@
+{
+  "name": "NLCName",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintnonlinear.html#nlcname",
+  "dtype": "str",
+  "otype": "nlconstr",
+  "modifiable": true
+}

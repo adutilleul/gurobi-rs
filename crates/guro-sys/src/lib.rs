@@ -375,6 +375,52 @@ unsafe extern "C" {
     pub fn GRBfreemodel(model: *mut GRBmodel) -> c_int;
 }
 
+// Nonlinear API (Gurobi 14+)
+#[cfg(feature = "gurobi14")]
+unsafe extern "C" {
+    pub fn GRBsetnlobj(
+        model: *mut GRBmodel,
+        nnodes: c_int,
+        opcode: *const c_int,
+        data: *const c_double,
+        parent: *const c_int,
+    ) -> c_int;
+
+    pub fn GRBgetnlobj(
+        model: *mut GRBmodel,
+        nnodesP: *mut c_int,
+        opcode: *mut c_int,
+        data: *mut c_double,
+        parent: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBdelnlobj(model: *mut GRBmodel) -> c_int;
+
+    pub fn GRBaddnlconstr(
+        model: *mut GRBmodel,
+        nnodes: c_int,
+        opcode: *const c_int,
+        data: *const c_double,
+        parent: *const c_int,
+        sense: c_char,
+        rhs: c_double,
+        name: c_str,
+    ) -> c_int;
+
+    pub fn GRBgetnlconstr(
+        model: *mut GRBmodel,
+        index: c_int,
+        nnodesP: *mut c_int,
+        opcode: *mut c_int,
+        data: *mut c_double,
+        parent: *mut c_int,
+    ) -> c_int;
+
+    pub fn GRBgetnlconstrbyname(model: *mut GRBmodel, name: c_str, indexP: *mut c_int) -> c_int;
+
+    pub fn GRBdelnlconstrs(model: *mut GRBmodel, len: c_int, ind: *const c_int) -> c_int;
+}
+
 // Model Solution
 unsafe extern "C" {
 

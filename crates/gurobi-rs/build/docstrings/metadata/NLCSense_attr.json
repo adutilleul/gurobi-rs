@@ -1,0 +1,7 @@
+{
+  "name": "NLCSense",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintnonlinear.html#nlcsense",
+  "dtype": "chr",
+  "otype": "nlconstr",
+  "modifiable": true
+}

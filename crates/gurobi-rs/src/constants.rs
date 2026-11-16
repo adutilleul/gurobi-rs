@@ -400,6 +400,10 @@ impl TryFrom<i32> for GenConstrType {
 #[cfg(feature = "gurobi13")]
 pub const GRB_METHOD_PDHG: i32 = 6;
 
+/// Value for the `Method` parameter selecting the nonlinear (NL) barrier solver (Gurobi 14+).
+#[cfg(feature = "gurobi14")]
+pub const GRB_METHOD_NLBARRIER: i32 = 7;
+
 /// Nonlinear operation codes used to build the expression tree consumed by
 /// [`Model::add_genconstr_nl`](`crate::Model::add_genconstr_nl`).
 #[repr(i32)]

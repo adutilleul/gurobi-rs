@@ -46,10 +46,10 @@ async def print_missing(impl, session, kind, full_list, implemented):
 
 
 async def main(args):
-    if args.gurobi13:
+    if args.gurobi13 or args.gurobi14:
         import utils_v13 as impl
 
-        print("[check-for-missing] using v13 (Sphinx) scraper")
+        print("[check-for-missing] using Sphinx scraper (Gurobi 13/14)")
     else:
         import utils as impl
 
@@ -87,6 +87,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Use the new docs.gurobi.com Sphinx site (utils_v13). "
         "Default: legacy gurobi.com/documentation/11.0/refman (utils.py).",
+    )
+    parser.add_argument(
+        "--gurobi14",
+        action="store_true",
+        help="Use the current docs.gurobi.com Sphinx site (utils_v13).",
     )
     parser.add_argument(
         "--strict",

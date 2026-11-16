@@ -284,6 +284,35 @@ impl ObjAttrGet<Constr, ConstrSense> for ConstrSenseAttr {
     impl_obj_get_custom! { ConstrSense, 0, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
 }
 
+#[cfg(feature = "gurobi14")]
+impl ObjAttrSet<NLConstr, c_char> for NLConstrNLCSenseAttr {
+    impl_obj_set! { c_char, 0, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
+}
+
+#[cfg(feature = "gurobi14")]
+impl ObjAttrSet<NLConstr, ConstrSense> for NLConstrNLCSenseAttr {
+    fn set(&self, model: &Model, idx: i32, val: ConstrSense) -> Result<()> {
+        self.set(model, idx, val as c_char)
+    }
+    fn set_batch<I: IntoIterator<Item = (Result<i32>, ConstrSense)>>(
+        &self,
+        model: &Model,
+        idx_val_pairs: I,
+    ) -> Result<()> {
+        self.set_batch(
+            model,
+            idx_val_pairs
+                .into_iter()
+                .map(|(idx, sense)| (idx, sense as c_char)),
+        )
+    }
+}
+
+#[cfg(feature = "gurobi14")]
+impl ObjAttrGet<NLConstr, ConstrSense> for NLConstrNLCSenseAttr {
+    impl_obj_get_custom! { ConstrSense, 0, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
+}
+
 /// From the Gurobi manual regarding string attributes:
 ///
 /// Note that all interface routines that return string-valued attributes are returning pointers into internal
@@ -562,6 +591,10 @@ mod tests {
     impl ObjAttr for Attribute<SOS> {
         type Obj = SOS;
     }
+    #[cfg(feature = "gurobi14")]
+    impl ObjAttr for Attribute<NLConstr> {
+        type Obj = NLConstr;
+    }
 
     impl_model_attr! { Attribute<Model>, i32, i32::MIN, ffi::GRBgetintattr, ffi::GRBsetintattr }
     impl_model_attr! { Attribute<Model>, f64, f64::NAN, ffi::GRBgetdblattr, ffi::GRBsetdblattr }
@@ -598,6 +631,7 @@ mod tests {
                     let enabled = match line.next().unwrap_or_default() {
                         "" => true,
                         "gurobi13" => cfg!(feature = "gurobi13"),
+                        "gurobi14" => cfg!(feature = "gurobi14"),
                         feature => panic!("unsupported catalog feature: {feature}"),
                     };
                     assert_eq!(line.next(), None);
@@ -613,6 +647,19 @@ mod tests {
         let constraint = model.add_constr("", crate::c!(var >= 1))?;
         let gconstraint = model.add_genconstr_indicator("", x, true, crate::c!(var >= y))?;
         let qconstraint = model.add_qconstr("", crate::c!(var * var >= 1))?;
+
+        #[cfg(feature = "gurobi14")]
+        let nlconstraint = {
+            let var_idx = model.var_index(&var)? as f64;
+            model.add_nlconstr(
+                "",
+                &[crate::Opcode::Variable as i32],
+                &[var_idx],
+                &[-1],
+                crate::ConstrSense::Greater,
+                1.0,
+            )?
+        };
 
         let sos = model.add_sos(vec![(x, 1.0), (y, 1.0)], SOSType::Ty1)?;
         model.optimize()?;
@@ -644,6 +691,15 @@ mod tests {
                 ("dbl", "sos") => Attribute::new(a).get::<f64>(&model, &sos),
                 ("int", "sos") => Attribute::new(a).get::<i32>(&model, &sos),
                 ("str", "sos") => Attribute::new(a).get::<String>(&model, &sos),
+
+                #[cfg(feature = "gurobi14")]
+                ("dbl", "nlconstr") => Attribute::new(a).get::<f64>(&model, &nlconstraint),
+                #[cfg(feature = "gurobi14")]
+                ("int", "nlconstr") => Attribute::new(a).get::<i32>(&model, &nlconstraint),
+                #[cfg(feature = "gurobi14")]
+                ("str", "nlconstr") => Attribute::new(a).get::<String>(&model, &nlconstraint),
+                #[cfg(feature = "gurobi14")]
+                ("chr", "nlconstr") => Attribute::new(a).get::<c_char>(&model, &nlconstraint),
 
                 ("dbl", "model") => Attribute::new(a).get_model::<f64>(&model),
                 ("int", "model") => Attribute::new(a).get_model::<i32>(&model),

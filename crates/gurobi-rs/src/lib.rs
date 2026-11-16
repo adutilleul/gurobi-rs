@@ -1,6 +1,6 @@
 //! This crate provides Rust bindings for Gurobi Optimizer.
 //!
-//! The crate supports Gurobi 10, 11, 12, and 13. Select the Cargo feature matching the
+//! The crate supports Gurobi 10, 11, 12, 13, and 14. Select the Cargo feature matching the
 //! major version of the installed Gurobi library:
 //!
 //! | Gurobi | Cargo feature | ABI family                 |
@@ -9,11 +9,12 @@
 //! | 11.x   | `gurobi11`    | legacy                     |
 //! | 12.x   | `gurobi12`    | version 12                 |
 //! | 13.x   | `gurobi13`    | version 12 environment ABI |
+//! | 14.x   | `gurobi14`    | version 12 environment ABI |
 //!
 //! Select one version feature in a normal dependency declaration. If multiple version
-//! features are enabled, the highest one is used. Gurobi 13 uses the version 12 environment
-//! ABI exposed by `guro-sys`, while its version-specific attributes and parameters are gated
-//! behind `gurobi13`.
+//! features are enabled, the highest one is used. Gurobi 13 and 14 use the version 12
+//! environment ABI exposed by `guro-sys`, while their version-specific attributes, parameters,
+//! and APIs are gated behind `gurobi13` and `gurobi14` respectively.
 //!
 //! The generated attribute and parameter documentation is based on the
 //! [Gurobi reference manual](https://docs.gurobi.com/projects/optimizer/en/current/reference/).
@@ -80,19 +81,20 @@
 // The whole lib is wrapped in this cfg-if block, so in the likely scenario a user forgets to set a feature flag,
 // they only see a single, relevant error.
 cfg_if::cfg_if! {
-    if #[cfg(not(any(feature = "gurobi13", feature = "gurobi12", feature = "gurobi11", feature = "gurobi10")))] {
+    if #[cfg(not(any(feature = "gurobi14", feature = "gurobi13", feature = "gurobi12", feature = "gurobi11", feature = "gurobi10")))] {
         compile_error!(
             concat!(
                 "The gurobi-rs crate requires one of the following feature flags to be set:\n",
+                "- gurobi14\n",
                 "- gurobi13\n",
                 "- gurobi12\n",
                 "- gurobi11\n",
                 "- gurobi10\n",
                 "The flag should match the major version of Gurobi, for example (in Cargo.toml):\n\n",
-                "gurobi-rs = {..., features = ['gurobi13']}\n\n",
-                "for Gurobi 13.X.\n\n",
+                "gurobi-rs = {..., features = ['gurobi14']}\n\n",
+                "for Gurobi 14.X.\n\n",
                 "If multiple feature flags are set, the highest version one is used, i.e. ",
-                "setting gurobi13 and gurobi10 is equivalent to only setting gurobi13."
+                "setting gurobi14 and gurobi10 is equivalent to only setting gurobi14."
             )
         );
     } else {

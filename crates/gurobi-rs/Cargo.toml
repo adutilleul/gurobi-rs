@@ -16,6 +16,7 @@ exclude = ["/tests"]
 
 [features]
 default = []
+gurobi14 = ["gurobi13", "guro-sys", "guro-sys/gurobi14"]
 gurobi13 = ["guro-sys", "guro-sys/gurobi13"]
 gurobi12 = ["guro-sys", "guro-sys/gurobi12"]
 gurobi11 = ["guro-sys"]
@@ -23,7 +24,7 @@ gurobi10 = ["guro-sys"]
 
 
 [package.metadata.docs.rs]
-features = ["gurobi13"]
+features = ["gurobi14"]
 rustdoc-args = ["--html-in-header", "doc/katex-header.html"]
 
 [dependencies]
@@ -106,3 +107,8 @@ path = "examples/tsp_lazy_constraints.rs"
 name = "genconstr_nl"
 path = "examples/genconstr_nl.rs"
 required-features = ["gurobi13"]
+
+[[example]]
+name = "nlconstr"
+path = "examples/nlconstr.rs"
+required-features = ["gurobi14"]

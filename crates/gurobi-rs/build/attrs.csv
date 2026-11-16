@@ -204,3 +204,16 @@ PoolNX,dbl,var,gurobi13
 BarPi,dbl,constr
 MaxMemUsed,dbl,model
 MemUsed,dbl,model
+IISNLConstr,int,nlconstr,gurobi14
+IISNLConstrForce,int,nlconstr,gurobi14
+IsConvex,int,model,gurobi14
+IsNLP,int,model,gurobi14
+NLCName,str,nlconstr,gurobi14
+NLCRHS,dbl,nlconstr,gurobi14
+NLCSense,custom,nlconstr,gurobi14
+NLCSlack,dbl,nlconstr,gurobi14
+NLCTag,str,nlconstr,gurobi14
+NumNLConstrs,int,model,gurobi14
+PreCrossoverPi,dbl,constr,gurobi14
+PreCrossoverStatus,int,model,gurobi14
+PreCrossoverX,dbl,var,gurobi14

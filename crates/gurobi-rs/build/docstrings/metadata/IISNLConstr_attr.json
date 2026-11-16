@@ -1,0 +1,7 @@
+{
+  "name": "IISNLConstr",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintnonlinear.html#iisnlconstr",
+  "dtype": "int",
+  "otype": "nlconstr",
+  "modifiable": false
+}

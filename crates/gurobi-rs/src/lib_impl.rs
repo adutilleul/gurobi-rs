@@ -150,6 +150,8 @@ pub use parameter::param;
 // private modules and their re-exports
 #[path = "constants.rs"]
 pub(crate) mod constants;
+#[cfg(feature = "gurobi14")]
+pub use constants::GRB_METHOD_NLBARRIER;
 #[cfg(feature = "gurobi13")]
 pub use constants::GRB_METHOD_PDHG;
 pub use constants::{
@@ -167,10 +169,14 @@ pub use error::{Error, Result};
 
 #[path = "model.rs"]
 mod model;
+#[cfg(feature = "gurobi14")]
+pub use model::NLExprTree;
 pub use model::{AsyncHandle, AsyncModel, Model, QConstrTerms, VarSpec};
 
 #[path = "model_object.rs"]
 pub(crate) mod model_object;
+#[cfg(feature = "gurobi14")]
+pub use model_object::NLConstr;
 pub use model_object::{Constr, GenConstr, ModelObject, QConstr, SOS, Var};
 
 #[path = "util.rs"]

@@ -6,6 +6,7 @@ Dependencies are managed with `uv` via `pyproject.toml` (see build/README.md).
 Usage:
     uv run scrape-docs.py            # legacy gurobi.com/documentation/11.0/refman site
     uv run scrape-docs.py --gurobi13 # updated docs.gurobi.com Sphinx site
+    uv run scrape-docs.py --gurobi14 # current docs.gurobi.com Sphinx site (14.0)
 """
 
 import asyncio
@@ -117,10 +118,10 @@ async def main(args):
     (DOC_PATH / "body").mkdir(parents=True, exist_ok=True)
     (DOC_PATH / "metadata").mkdir(parents=True, exist_ok=True)
 
-    if args.gurobi13:
+    if args.gurobi13 or args.gurobi14:
         import utils_v13 as impl
 
-        print("[scrape-docs] using v13 (Sphinx) scraper")
+        print("[scrape-docs] using Sphinx scraper (Gurobi 13/14)")
     else:
         import utils as impl
 
@@ -156,6 +157,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Use the new docs.gurobi.com Sphinx site (utils_v13). "
         "Default: legacy gurobi.com/documentation/11.0/refman (utils.py).",
+    )
+    p.add_argument(
+        "--gurobi14",
+        action="store_true",
+        help="Use the current docs.gurobi.com Sphinx site (utils_v13).",
     )
     p.add_argument(
         "-m",

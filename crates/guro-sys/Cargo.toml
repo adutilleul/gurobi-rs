@@ -22,4 +22,6 @@ anyhow = { workspace = true, optional = true }
 gurobi12 = []
 # Gurobi 13 shares the same env-creation ABI as 12, so it implies `gurobi12`.
 gurobi13 = ["gurobi12"]
+# Gurobi 14 shares the env-creation ABI as 12/13 and adds the nonlinear API.
+gurobi14 = ["gurobi13"]
 build_script_tests = ["anyhow"]

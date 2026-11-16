@@ -15,12 +15,14 @@ The public feature-to-library mapping is:
 | 11                   | `gurobi11`    | common entries                         |
 | 12                   | `gurobi12`    | common entries                         |
 | 13                   | `gurobi13`    | common entries plus `gurobi13` entries |
+| 14                   | `gurobi14`    | common entries plus `gurobi14` entries |
 
 An empty `feature` field means that an entry is generated for every supported version. A
-`gurobi13` value adds an entry only when the `gurobi13` Cargo feature is selected. Keep a new
-attribute or parameter out of the common catalog until it is present in every supported library.
-The generator currently accepts only the empty value and `gurobi13`; adding another gate requires
-updating `build/main.rs`, the feature matrix, and the checks below together.
+`gurobi13` value adds an entry only when the `gurobi13` Cargo feature is selected; a `gurobi14`
+value does the same for `gurobi14`. Keep a new attribute or parameter out of the common catalog
+until it is present in every supported library. The generator accepts the empty value,
+`gurobi13` and `gurobi14`; adding another gate requires updating `build/main.rs`, the feature
+matrix, and the checks below together.
 
 ## Running the Python tooling
 
@@ -31,11 +33,15 @@ uv run scrape-docs.py
 uv run check-for-missing.py
 ```
 
-For Gurobi 13, select the current Sphinx documentation scraper explicitly:
+For Gurobi 13 or 14, select the current Sphinx documentation scraper explicitly:
 
 ```sh
 uv run scrape-docs.py --gurobi13
 uv run check-for-missing.py --gurobi13 --strict
+
+# Gurobi 14
+uv run scrape-docs.py --gurobi14
+uv run check-for-missing.py --gurobi14 --strict
 ```
 
 The legacy scraper can also be run in strict mode when checking the common catalog:
@@ -68,16 +74,17 @@ The allowed values for `dtype` are described below:
 The `otype` is the object type to which this attribute belongs (`Model`, `Var`, `Constr`, etc).
 The allowed values for `otype` are listed below. The optional `feature` field restricts an entry to
 a Cargo feature. Leave it empty for attributes available in every supported version; use
-`gurobi13` only for attributes introduced by Gurobi 13.
+`gurobi13` or `gurobi14` only for attributes introduced by that version.
 
-| `otype`   | Description                           |
-| --------- | ------------------------------------- |
-| `model`   | no marker trait                       |
-| `var`     | marker trait `ObjAttr<Obj=Var>`       |
-| `constr`  | marker trait `ObjAttr<Obj=Constr>`    |
-| `gconstr` | marker trait `ObjAttr<Obj=GenConstr>` |
-| `qconstr` | marker trait `ObjAttr<Obj=QConstr>`   |
-| `sos`     | marker trait `ObjAttr<Obj=SOS>`       |
+| `otype`    | Description                           |
+| ---------- | ------------------------------------- |
+| `model`    | no marker trait                       |
+| `var`      | marker trait `ObjAttr<Obj=Var>`       |
+| `constr`   | marker trait `ObjAttr<Obj=Constr>`    |
+| `gconstr`  | marker trait `ObjAttr<Obj=GenConstr>` |
+| `qconstr`  | marker trait `ObjAttr<Obj=QConstr>`   |
+| `sos`      | marker trait `ObjAttr<Obj=SOS>`       |
+| `nlconstr` | marker trait `ObjAttr<Obj=NLConstr>`  |
 
 This build script will group attributes by `otype` and `dtype`, and generate enums as needed.  For example,
 for `otype = "constr"` and `dtype = "str"` the following code is generated (in  `src/attribute/attr_enums.rs`):

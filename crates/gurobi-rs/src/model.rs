@@ -28,6 +28,22 @@ pub struct QConstrTerms {
     pub quadratic: Vec<(Var, Var, f64)>,
 }
 
+/// A nonlinear expression tree in the parallel-array encoding used by Gurobi.
+///
+/// `opcode[i]` is the operation at node `i`, `data[i]` is its numeric payload, and
+/// `parent[i]` is the index of its parent node (`-1` for the root). See
+/// [`Model::add_nlconstr`] and [`Model::set_nlobj`] for details.
+#[cfg(feature = "gurobi14")]
+#[derive(Debug, Clone, PartialEq)]
+pub struct NLExprTree {
+    /// Operation code for each node.
+    pub opcode: Vec<i32>,
+    /// Numeric payload for each node.
+    pub data: Vec<f64>,
+    /// Parent node index for each node, with `-1` for the root.
+    pub parent: Vec<i32>,
+}
+
 /// The data needed to add one variable with [`Model::add_vars`].
 ///
 /// The column coefficients contain `(constraint, coefficient)` pairs.  The
@@ -83,6 +99,8 @@ pub struct Model {
     pub(crate) genconstrs: IdxManager<GenConstr>,
     pub(crate) qconstrs: IdxManager<QConstr>,
     pub(crate) sos: IdxManager<SOS>,
+    #[cfg(feature = "gurobi14")]
+    pub(crate) nlconstrs: IdxManager<NLConstr>,
 }
 
 macro_rules! impl_object_list_getter {
@@ -195,11 +213,17 @@ impl Model {
     }
 
     fn model_update_needed(&self) -> bool {
+        #[cfg(feature = "gurobi14")]
+        let nlconstr_update_needed = self.nlconstrs.model_update_needed();
+        #[cfg(not(feature = "gurobi14"))]
+        let nlconstr_update_needed = false;
+
         self.vars.model_update_needed()
             || self.constrs.model_update_needed()
             || self.genconstrs.model_update_needed()
             || self.qconstrs.model_update_needed()
             || self.sos.model_update_needed()
+            || nlconstr_update_needed
     }
 
     fn build_idx_arrays_obj_obj<O1, O2, T>(
@@ -351,6 +375,8 @@ impl Model {
             genconstrs: IdxManager::new(id),
             qconstrs: IdxManager::new(id),
             sos: IdxManager::new(id),
+            #[cfg(feature = "gurobi14")]
+            nlconstrs: IdxManager::new(id),
         };
 
         let nvars = model.get_attr(attr::NumVars)?;
@@ -358,12 +384,18 @@ impl Model {
         let ngenconstr = model.get_attr(attr::NumGenConstrs)?;
         let nqconstr = model.get_attr(attr::NumQConstrs)?;
         let sos = model.get_attr(attr::NumSOS)?;
+        #[cfg(feature = "gurobi14")]
+        let nnlconstr = model.get_attr(attr::NumNLConstrs)?;
 
         model.vars = IdxManager::new_with_existing_obj(id, nvars as usize);
         model.constrs = IdxManager::new_with_existing_obj(id, nconstr as usize);
         model.genconstrs = IdxManager::new_with_existing_obj(id, ngenconstr as usize);
         model.qconstrs = IdxManager::new_with_existing_obj(id, nqconstr as usize);
         model.sos = IdxManager::new_with_existing_obj(id, sos as usize);
+        #[cfg(feature = "gurobi14")]
+        {
+            model.nlconstrs = IdxManager::new_with_existing_obj(id, nnlconstr as usize);
+        }
 
         Ok(model)
     }
@@ -509,6 +541,8 @@ impl Model {
         self.genconstrs.update();
         self.qconstrs.update();
         self.sos.update();
+        #[cfg(feature = "gurobi14")]
+        self.nlconstrs.update();
         self.check_apicall(unsafe { ffi::GRBupdatemodel(self.ptr) })?;
         Ok(())
     }
@@ -1535,6 +1569,185 @@ impl Model {
         Ok(self.genconstrs.add_new(self.update_mode_lazy()?))
     }
 
+    #[cfg(feature = "gurobi14")]
+    fn checked_nl_tree(opcode: &[i32], data: &[f64], parent: &[i32]) -> Result<c_int> {
+        if opcode.len() != data.len() || opcode.len() != parent.len() {
+            return Err(Error::AlgebraicError(
+                "opcode, data and parent slices must have the same length".to_string(),
+            ));
+        }
+        crate::util::checked_count(opcode.len())
+    }
+
+    /// (Gurobi 14+) Add a nonlinear constraint defined by an expression tree.
+    ///
+    /// `opcode`, `data` and `parent` use the same parallel-array encoding as
+    /// [`Model::add_genconstr_nl`]: `opcode[i]` is the [`Opcode`](crate::Opcode) at node `i`,
+    /// `data[i]` is the numeric payload (the constant value for `Opcode::Constant` and the
+    /// variable index for `Opcode::Variable`), and `parent[i]` is the parent node index
+    /// (`-1` for the root). The root node is the left-hand side of the constraint; `sense`
+    /// and `rhs` define the comparison.
+    ///
+    /// Wraps `GRBaddnlconstr`.
+    #[cfg(feature = "gurobi14")]
+    pub fn add_nlconstr(
+        &mut self,
+        name: &str,
+        opcode: &[i32],
+        data: &[f64],
+        parent: &[i32],
+        sense: ConstrSense,
+        rhs: f64,
+    ) -> Result<NLConstr> {
+        let nnodes = Self::checked_nl_tree(opcode, data, parent)?;
+        let constrname = CString::new(name)?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBaddnlconstr(
+                self.ptr,
+                nnodes,
+                opcode.as_ptr(),
+                data.as_ptr(),
+                parent.as_ptr(),
+                sense as ffi::c_char,
+                rhs,
+                constrname.as_ptr(),
+            )
+        })?;
+
+        Ok(self.nlconstrs.add_new(self.update_mode_lazy()?))
+    }
+
+    /// (Gurobi 14+) Retrieve the expression tree of a nonlinear constraint.
+    ///
+    /// Wraps `GRBgetnlconstr`. The model must be updated first.
+    #[cfg(feature = "gurobi14")]
+    pub fn get_nlconstr(&self, constr: &NLConstr) -> Result<NLExprTree> {
+        let index = self.get_index(constr)?;
+        let mut nnodes = 0;
+        self.check_apicall(unsafe {
+            ffi::GRBgetnlconstr(
+                self.ptr,
+                index,
+                &mut nnodes,
+                null_mut(),
+                null_mut(),
+                null_mut(),
+            )
+        })?;
+
+        if nnodes == 0 {
+            return Ok(NLExprTree {
+                opcode: Vec::new(),
+                data: Vec::new(),
+                parent: Vec::new(),
+            });
+        }
+
+        let mut opcode = vec![0; nnodes as usize];
+        let mut data = vec![0.0; nnodes as usize];
+        let mut parent = vec![0; nnodes as usize];
+        self.check_apicall(unsafe {
+            ffi::GRBgetnlconstr(
+                self.ptr,
+                index,
+                &mut nnodes,
+                opcode.as_mut_ptr(),
+                data.as_mut_ptr(),
+                parent.as_mut_ptr(),
+            )
+        })?;
+        opcode.truncate(nnodes as usize);
+        data.truncate(nnodes as usize);
+        parent.truncate(nnodes as usize);
+
+        Ok(NLExprTree {
+            opcode,
+            data,
+            parent,
+        })
+    }
+
+    /// (Gurobi 14+) Get a nonlinear constraint by name. Returns `None` if no constraint
+    /// with that name exists. The model must be updated first.
+    #[cfg(feature = "gurobi14")]
+    pub fn get_nlconstr_by_name(&self, name: &str) -> Result<Option<NLConstr>> {
+        if self.nlconstrs.model_update_needed() {
+            return Err(Error::ModelUpdateNeeded);
+        }
+        let n = CString::new(name)?;
+        let mut idx = i32::MIN;
+        self.check_apicall(unsafe { ffi::GRBgetnlconstrbyname(self.ptr, n.as_ptr(), &mut idx) })?;
+        if idx < 0 {
+            Ok(None)
+        } else {
+            Ok(Some(self.nlconstrs.objects()[idx as usize]))
+        }
+    }
+
+    /// (Gurobi 14+) Set the nonlinear part of the objective function.
+    ///
+    /// `opcode`, `data` and `parent` use the same encoding as [`Model::add_nlconstr`].
+    /// Wraps `GRBsetnlobj`.
+    #[cfg(feature = "gurobi14")]
+    pub fn set_nlobj(&mut self, opcode: &[i32], data: &[f64], parent: &[i32]) -> Result<()> {
+        let nnodes = Self::checked_nl_tree(opcode, data, parent)?;
+        self.check_apicall(unsafe {
+            ffi::GRBsetnlobj(
+                self.ptr,
+                nnodes,
+                opcode.as_ptr(),
+                data.as_ptr(),
+                parent.as_ptr(),
+            )
+        })
+    }
+
+    /// (Gurobi 14+) Retrieve the nonlinear part of the objective function.
+    ///
+    /// Returns `None` when the objective has no nonlinear part. Wraps `GRBgetnlobj`.
+    #[cfg(feature = "gurobi14")]
+    pub fn get_nlobj(&self) -> Result<Option<NLExprTree>> {
+        let mut nnodes = 0;
+        self.check_apicall(unsafe {
+            ffi::GRBgetnlobj(self.ptr, &mut nnodes, null_mut(), null_mut(), null_mut())
+        })?;
+
+        if nnodes == 0 {
+            return Ok(None);
+        }
+
+        let mut opcode = vec![0; nnodes as usize];
+        let mut data = vec![0.0; nnodes as usize];
+        let mut parent = vec![0; nnodes as usize];
+        self.check_apicall(unsafe {
+            ffi::GRBgetnlobj(
+                self.ptr,
+                &mut nnodes,
+                opcode.as_mut_ptr(),
+                data.as_mut_ptr(),
+                parent.as_mut_ptr(),
+            )
+        })?;
+        opcode.truncate(nnodes as usize);
+        data.truncate(nnodes as usize);
+        parent.truncate(nnodes as usize);
+
+        Ok(Some(NLExprTree {
+            opcode,
+            data,
+            parent,
+        }))
+    }
+
+    /// (Gurobi 14+) Remove the nonlinear part of the objective function.
+    ///
+    /// Wraps `GRBdelnlobj`. Succeeds as a no-op when no nonlinear objective is set.
+    #[cfg(feature = "gurobi14")]
+    pub fn del_nlobj(&mut self) -> Result<()> {
+        self.check_apicall(unsafe { ffi::GRBdelnlobj(self.ptr) })
+    }
+
     impl_func_constr!(
         "a natural exponent",
         r"$y = \exp(x) or e^x$",
@@ -1966,6 +2179,27 @@ impl Model {
         })?;
 
         Ok(())
+    }
+
+    /// (Gurobi 14+) Delete a list of nonlinear constraints from an existing model.
+    ///
+    /// # Errors
+    /// - [`Error::ModelObjectPending`] if some constraints haven't yet been added to the model.
+    /// - [`Error::ModelObjectRemoved`] if some constraints have been removed from the model.
+    /// - [`Error::ModelObjectMismatch`] if some constraints are from a different model.
+    /// - [`Error::FromAPI`] if a Gurobi API error occurs.
+    #[cfg(feature = "gurobi14")]
+    pub fn del_nlconstrs(&mut self, constrs: impl IntoIterator<Item = NLConstr>) -> Result<()> {
+        let constr_indices =
+            crate::util::collect_indices(constrs.into_iter().map(|c| self.get_index_build(&c)))?;
+
+        self.check_apicall(unsafe {
+            ffi::GRBdelnlconstrs(
+                self.ptr,
+                crate::util::checked_count(constr_indices.len())?,
+                constr_indices.as_ptr(),
+            )
+        })
     }
 
     /// Set the objective function of the model and optimisation direction (min or max).
@@ -2451,6 +2685,9 @@ impl Model {
     impl_object_list_getter!(get_qconstrs, QConstr, qconstrs, "quadratic constraints");
 
     impl_object_list_getter!(get_sos, SOS, sos, "SOS constraints");
+
+    #[cfg(feature = "gurobi14")]
+    impl_object_list_getter!(get_nlconstrs, NLConstr, nlconstrs, "nonlinear constraints");
 
     /// Remove a variable or constraint from the model.
     pub fn remove<O: ModelObject>(&mut self, item: O) -> Result<()> {

@@ -10,11 +10,11 @@ import sys
 from pathlib import Path
 
 
-SUPPORTED_FEATURES = ("gurobi10", "gurobi11", "gurobi12", "gurobi13")
-CATALOG_FEATURES = ("", "gurobi13")
+SUPPORTED_FEATURES = ("gurobi10", "gurobi11", "gurobi12", "gurobi13", "gurobi14")
+CATALOG_FEATURES = ("", "gurobi13", "gurobi14")
 ATTRIBUTE_DTYPES = {"dbl", "int", "chr", "str", "custom"}
 PARAMETER_DTYPES = {"dbl", "int", "str"}
-OBJECT_TYPES = {"model", "var", "constr", "gconstr", "qconstr", "sos"}
+OBJECT_TYPES = {"model", "var", "constr", "gconstr", "qconstr", "sos", "nlconstr"}
 
 
 def read_catalog(path: Path, fields: list[str], dtypes: set[str], kind: str):
@@ -64,13 +64,24 @@ def check_catalog_inputs(build_dir: Path):
         "parameter",
     )
 
+    versions = {
+        "gurobi10": 10,
+        "gurobi11": 11,
+        "gurobi12": 12,
+        "gurobi13": 13,
+        "gurobi14": 14,
+    }
+    catalog_versions = {"gurobi13": 13, "gurobi14": 14}
+
+    def enabled(row, feature):
+        required = row["feature"]
+        if not required:
+            return True
+        return catalog_versions[required] <= versions[feature]
+
     for feature in SUPPORTED_FEATURES:
-        active_attrs = [
-            row for row in attrs if not row["feature"] or row["feature"] == feature
-        ]
-        active_params = [
-            row for row in params if not row["feature"] or row["feature"] == feature
-        ]
+        active_attrs = [row for row in attrs if enabled(row, feature)]
+        active_params = [row for row in params if enabled(row, feature)]
         print(
             f"{feature}: {len(active_attrs)} attributes, "
             f"{len(active_params)} parameters"

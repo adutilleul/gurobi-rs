@@ -1,11 +1,11 @@
-"""Scraper for the Gurobi 13 documentation site.
+"""Scraper for the Gurobi 13/14 documentation site.
 
-The Gurobi 13 reference manual lives at https://docs.gurobi.com/projects/optimizer/en/current/
+The current Gurobi reference manual lives at https://docs.gurobi.com/projects/optimizer/en/current/
 and uses a Sphinx-style DOM (one `<section id="...">` per item).
 
-This module provides v13-specific replacements with the same return shapes as the old
+This module provides Sphinx-specific replacements with the same return shapes as the old
 `fetch_*_data`/`fetch_*_list` functions, so `scrape-docs.py` can swap implementations
-based on a `--gurobi13` flag.
+based on a `--gurobi13`/`--gurobi14` flag.
 """
 
 from __future__ import annotations
@@ -39,6 +39,7 @@ _OTYPES_BY_PAGE = {
     "batch": "batch",
     "constraintgeneral": "gconstr",
     "constraintlinear": "constr",
+    "constraintnonlinear": "nlconstr",
     "constraintquadratic": "qconstr",
     "model": "model",
     "multiobjective": "model",

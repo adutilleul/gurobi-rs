@@ -1,6 +1,6 @@
 # gurobi-rs ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/oximo-rs/gurobi-rs?sort=semver) ![](https://img.shields.io/crates/v/gurobi-rs.svg) ![](https://img.shields.io/docsrs/gurobi-rs)
 
-This crate provides Rust bindings for Gurobi Optimizer. It supports Gurobi 10, 11, 12, and 13.
+This crate provides Rust bindings for Gurobi Optimizer. It supports Gurobi 10, 11, 12, 13, and 14.
 
 This library started as fork of the [`gurobi`](https://github.com/ubnt-intrepid/rust-gurobi) which appears to be no longer maintained.  It has since undergone a number of fundamental API changes.
 
@@ -18,21 +18,23 @@ The `gurobi-rs` crate requires one feature flag matching the installed Gurobi ma
 | 11.x   | `gurobi11`    |
 | 12.x   | `gurobi12`    |
 | 13.x   | `gurobi13`    |
+| 14.x   | `gurobi14`    |
 
 The flag should match the major version of Gurobi, for example (in Cargo.toml):
 
 ```toml
-gurobi-rs = {..., features = ['gurobi13']}
+gurobi-rs = {..., features = ['gurobi14']}
 ```
 
-for Gurobi 13.X.
+for Gurobi 14.X.
 
 If multiple feature flags are set, the highest version one is used. For example, setting
-`gurobi13` and `gurobi10` is equivalent to setting only `gurobi13`.
+`gurobi14` and `gurobi10` is equivalent to setting only `gurobi14`.
 
 The generated attributes and parameters use the common catalog for the supported baseline and
-gate Gurobi 13 additions behind `gurobi13`. Catalog changes must preserve these gates; see
-[`build/readme.md`](build/readme.md) for the release check and installed-library test matrix.
+gate Gurobi 13 and 14 additions behind `gurobi13` and `gurobi14` respectively. Catalog changes
+must preserve these gates; see [`build/readme.md`](build/readme.md) for the release check and
+installed-library test matrix.
 
 ### Building
 

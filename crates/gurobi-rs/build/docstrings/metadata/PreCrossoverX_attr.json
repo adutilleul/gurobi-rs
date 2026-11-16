@@ -1,0 +1,7 @@
+{
+  "name": "PreCrossoverX",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/variable.html#precrossoverx",
+  "dtype": "dbl",
+  "otype": "var",
+  "modifiable": false
+}

@@ -1,0 +1,7 @@
+{
+  "name": "NumNLConstrs",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/model.html#numnlconstrs",
+  "dtype": "int",
+  "otype": "model",
+  "modifiable": false
+}

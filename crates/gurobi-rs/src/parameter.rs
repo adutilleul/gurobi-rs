@@ -225,6 +225,7 @@ mod tests {
                     let enabled = match line.next().unwrap_or_default() {
                         "" => true,
                         "gurobi13" => cfg!(feature = "gurobi13"),
+                        "gurobi14" => cfg!(feature = "gurobi14"),
                         feature => panic!("unsupported catalog feature: {feature}"),
                     };
                     assert_eq!(line.next(), None);

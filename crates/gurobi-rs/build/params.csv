@@ -208,3 +208,11 @@ OptimalityTarget,int,gurobi13
 ThreadLimit,int
 WLSConfig,str
 WLSProxy,str
+NLBarInitMu,dbl,gurobi14
+NLBarStartPush,dbl,gurobi14
+NoRelTreeHeur,int,gurobi14
+OACuts,int,gurobi14
+PDHGEarlyCrossover,dbl,gurobi14
+PDHGMIPHeurSolutions,int,gurobi14
+PDHGMIPHeurTime,dbl,gurobi14
+PDHGMIPHeurWork,dbl,gurobi14

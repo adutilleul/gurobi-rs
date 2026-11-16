@@ -1,0 +1,7 @@
+{
+  "name": "NLCTag",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintnonlinear.html#nlctag",
+  "dtype": "str",
+  "otype": "nlconstr",
+  "modifiable": true
+}

@@ -1,0 +1,8 @@
+{
+  "name": "NLBarInitMu",
+  "url": "https://docs.gurobi.com/projects/optimizer/en/current/reference/parameters.html#nlbarinitmu",
+  "dtype": "dbl",
+  "default": "1.0",
+  "min": "1e-8",
+  "max": "Infinity"
+}
