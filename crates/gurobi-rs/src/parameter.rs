@@ -78,7 +78,7 @@ impl ParamSet<f64> for DoubleParam {
 
 impl ParamGet<String> for StrParam {
     fn get(&self, env: &Env) -> Result<String> {
-        let mut buf = [0i8; GRB_MAX_STRLEN];
+        let mut buf = [0; GRB_MAX_STRLEN];
         unsafe {
             env.check_apicall(ffi::GRBgetstrparam(
                 env.as_mut_ptr(),
@@ -182,7 +182,7 @@ impl ParamSet<f64> for &Parameter {
 
 impl ParamGet<String> for &Parameter {
     fn get(&self, env: &Env) -> Result<String> {
-        let mut buf = [0i8; GRB_MAX_STRLEN];
+        let mut buf = [0; GRB_MAX_STRLEN];
         unsafe {
             env.check_apicall(ffi::GRBgetstrparam(
                 env.as_mut_ptr(),

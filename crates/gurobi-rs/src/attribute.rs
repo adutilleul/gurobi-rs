@@ -222,18 +222,18 @@ impl<A> ObjAttrGet<A::Obj, c_char> for A
 where
     A: CharAttr + ObjAttr + AsCStr,
 {
-    impl_obj_get! { c_char, 0i8, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist }
+    impl_obj_get! { c_char, 0, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist }
 }
 
 impl<A> ObjAttrSet<A::Obj, c_char> for A
 where
     A: CharAttr + ObjAttr + AsCStr,
 {
-    impl_obj_set! { c_char, 0i8, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
+    impl_obj_set! { c_char, 0, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
 }
 
 impl ObjAttrSet<Var, c_char> for VarVTypeAttr {
-    impl_obj_set! { c_char, 0i8, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
+    impl_obj_set! { c_char, 0, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
 }
 
 impl ObjAttrSet<Var, VarType> for VarVTypeAttr {
@@ -255,11 +255,11 @@ impl ObjAttrSet<Var, VarType> for VarVTypeAttr {
 }
 
 impl ObjAttrGet<Var, VarType> for VarVTypeAttr {
-    impl_obj_get_custom! { VarType, 0i8, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
+    impl_obj_get_custom! { VarType, 0, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
 }
 
 impl ObjAttrSet<Constr, c_char> for ConstrSenseAttr {
-    impl_obj_set! { c_char, 0i8, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
+    impl_obj_set! { c_char, 0, ffi::GRBsetcharattrelement, ffi::GRBsetcharattrlist }
 }
 
 impl ObjAttrSet<Constr, ConstrSense> for ConstrSenseAttr {
@@ -281,7 +281,7 @@ impl ObjAttrSet<Constr, ConstrSense> for ConstrSenseAttr {
 }
 
 impl ObjAttrGet<Constr, ConstrSense> for ConstrSenseAttr {
-    impl_obj_get_custom! { ConstrSense, 0i8, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
+    impl_obj_get_custom! { ConstrSense, 0, ffi::GRBgetcharattrelement, ffi::GRBgetcharattrlist}
 }
 
 /// From the Gurobi manual regarding string attributes:

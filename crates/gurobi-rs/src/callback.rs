@@ -1001,7 +1001,7 @@ impl<'a> CbCtx<'a> {
                 self.cbdata,
                 where_,
                 what,
-                &mut buf as *mut *const i8 as *mut raw::c_void,
+                &mut buf as *mut *const raw::c_char as *mut raw::c_void,
             )
         })
         .and(Ok(unsafe { util::copy_c_str(buf) }))
