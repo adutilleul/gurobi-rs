@@ -2493,6 +2493,37 @@ impl Model {
         self.get_env().get(param)
     }
 
+    /// Set a parameter that applies only to one pass of a hierarchical
+    /// multi-objective optimization.
+    ///
+    /// `pass` is the zero-based optimization-pass index, where pass `0` is the
+    /// highest-priority objective. Gurobi creates the pass environment lazily
+    /// and keeps ownership of it. Wraps `GRBgetmultiobjenv`.
+    ///
+    /// # Errors
+    /// Returns [`Error::FromAPI`] if Gurobi cannot create the pass environment,
+    /// or the parameter error for an unknown or out-of-range value.
+    pub fn set_multiobj_param<P, V>(&mut self, pass: i32, param: P, value: V) -> Result<()>
+    where
+        P: ParamSet<V>,
+    {
+        let env_ptr = unsafe { ffi::GRBgetmultiobjenv(self.ptr, pass) };
+        if env_ptr.is_null() {
+            return Err(Error::FromAPI(
+                "Failed to retrieve multi-objective environment".to_owned(),
+                2002,
+            ));
+        }
+        let mut env = unsafe { Env::new_gurobi_allocated(&self.env, env_ptr) };
+        param.set(&mut env, value)
+    }
+
+    /// Discard every multi-objective environment created by
+    /// [`Model::set_multiobj_param`]. Wraps `GRBdiscardmultiobjenvs`.
+    pub fn discard_multiobj_envs(&mut self) {
+        unsafe { ffi::GRBdiscardmultiobjenvs(self.ptr) };
+    }
+
     /// Modify the model to create a feasibility relaxation.
     ///
     /// Given a `Model` whose objective function is $f(x)$, the feasibility relaxation seeks to minimise
