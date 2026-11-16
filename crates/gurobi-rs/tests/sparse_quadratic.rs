@@ -1,3 +1,5 @@
+use std::os::raw::c_char;
+
 use gurobi_rs::prelude::*;
 
 fn environment() -> gurobi_rs::Result<Env> {
@@ -167,7 +169,7 @@ fn sparse_rows_preserve_senses_constants_and_duplicate_pairs() -> gurobi_rs::Res
             rhs,
         )?;
         model.update()?;
-        assert_eq!(model.get_obj_attr(attr::QCSense, &row)?, sense as i8);
+        assert_eq!(model.get_obj_attr(attr::QCSense, &row)?, sense as c_char);
         assert_eq!(model.get_obj_attr(attr::QCRHS, &row)?, rhs + 5.0);
     }
     model.set_param(param::NonConvex, 2)?;
